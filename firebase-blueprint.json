@@ -1,0 +1,165 @@
+{
+  "entities": {
+    "UserAccount": {
+      "title": "UserAccount",
+      "description": "Private authenticated cat parent profile and nutrition preferences.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID matching document ID.",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User display name from Google Sign-In.",
+          "maxLength": 100
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Verified Google email address.",
+          "maxLength": 160
+        },
+        "catName": {
+          "type": "string",
+          "description": "Cat name for personalized nutrition profile.",
+          "maxLength": 60
+        },
+        "lifeStage": {
+          "type": "string",
+          "enum": ["Kitten (3–12m)", "Indoor Adult", "Senior (7+ yrs)"],
+          "description": "Cat life stage selection."
+        },
+        "priorityGoal": {
+          "type": "string",
+          "enum": ["Natural Ingredients", "Gentle Digestion", "Fair Daily Value"],
+          "description": "Primary nutritional priority."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": ["uid", "displayName", "email", "catName", "lifeStage", "priorityGoal", "createdAt", "updatedAt"]
+    },
+    "CartLine": {
+      "title": "CartLine",
+      "description": "Saved shopping bag line item scoped to the signed-in user.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner Firebase Auth UID.",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "productId": {
+          "type": "string",
+          "description": "Catalog product identifier.",
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "quantity": {
+          "type": "integer",
+          "description": "Item quantity in bag (1 to 20)."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last bag update."
+        }
+      },
+      "required": ["userId", "productId", "quantity", "updatedAt"]
+    },
+    "OrderRecord": {
+      "title": "OrderRecord",
+      "description": "Immutable simulated urban order confirmation record.",
+      "type": "object",
+      "properties": {
+        "orderId": {
+          "type": "string",
+          "description": "Human-readable order identifier.",
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Owner Firebase Auth UID.",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "customerName": {
+          "type": "string",
+          "description": "Recipient name.",
+          "maxLength": 100
+        },
+        "city": {
+          "type": "string",
+          "description": "Metro delivery city.",
+          "maxLength": 60
+        },
+        "paymentMethod": {
+          "type": "string",
+          "enum": ["UPI", "Cash on Delivery"],
+          "description": "Simulated payment method."
+        },
+        "subtotalInr": {
+          "type": "number",
+          "description": "Order subtotal in INR."
+        },
+        "deliveryFeeInr": {
+          "type": "number",
+          "description": "Delivery fee in INR."
+        },
+        "totalInr": {
+          "type": "number",
+          "description": "Grand total in INR."
+        },
+        "itemsSummary": {
+          "type": "string",
+          "description": "Compact summary of purchased packs.",
+          "maxLength": 500
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server order placement timestamp."
+        }
+      },
+      "required": [
+        "orderId",
+        "userId",
+        "customerName",
+        "city",
+        "paymentMethod",
+        "subtotalInr",
+        "deliveryFeeInr",
+        "totalInr",
+        "itemsSummary",
+        "createdAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserAccount" },
+      "description": "Private user account and cat nutrition preferences."
+    },
+    "/users/{userId}/cart/{productId}": {
+      "schema": { "$ref": "#/entities/CartLine" },
+      "description": "Persistent shopping bag line items for the user."
+    },
+    "/users/{userId}/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/OrderRecord" },
+      "description": "Simulated order confirmation records owned by the user."
+    }
+  }
+}

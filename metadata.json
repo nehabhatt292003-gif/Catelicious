@@ -1,0 +1,6 @@
+{
+  "name": "Catelicious",
+  "description": "Healthy, naturally sourced, mid-range cat food storefront for urban cat parents in India.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
