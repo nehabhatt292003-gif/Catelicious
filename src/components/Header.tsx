@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { ShoppingBag, User as UserIcon, LogOut, ChevronDown } from 'lucide-react';
+import { ShoppingBag, LogOut, ChevronDown } from 'lucide-react';
 import { AuthUser, UserPreferences } from '../types';
 
 interface HeaderProps {
   cartCount: number;
   user: AuthUser | null;
+  isAuthReady: boolean;
   preferences: UserPreferences;
   onOpenCart: () => void;
   onOpenAuth: () => void;
@@ -14,6 +15,7 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   cartCount,
   user,
+  isAuthReady,
   preferences,
   onOpenCart,
   onOpenAuth,
@@ -66,7 +68,12 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Zone 3: Account trigger + Primary Bag action */}
         <div className="flex items-center gap-3 shrink-0 relative">
-          {user ? (
+          {!isAuthReady ? (
+            <div
+              className="w-28 h-10 rounded-lg bg-[#F4EFE6] border border-[#E4DDD2] animate-pulse"
+              aria-hidden="true"
+            />
+          ) : user ? (
             <div className="relative">
               <button
                 type="button"
@@ -119,7 +126,7 @@ export const Header: React.FC<HeaderProps> = ({
                         }}
                         className="w-full text-left px-3 py-2 text-xs font-medium text-[#1E2421] hover:bg-[#F4EFE6] rounded-lg transition-colors"
                       >
-                        Edit Cat Preferences
+                        Cat Profile &amp; Orders
                       </button>
                       <button
                         type="button"
@@ -141,10 +148,15 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               type="button"
               onClick={onOpenAuth}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-[#1E2421] hover:bg-[#F4EFE6] rounded-lg transition-colors whitespace-nowrap shrink-0 min-h-[40px]"
+              className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-[#1E2421] bg-[#F4EFE6] hover:bg-[#EDE6DA] border border-[#E4DDD2] rounded-lg transition-colors whitespace-nowrap shrink-0 min-h-[40px]"
             >
-              <UserIcon className="w-4 h-4 text-[#525B56]" />
-              <span>Sign In</span>
+              <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  fill="#234F3E"
+                  d="M21.35 11.1h-9.17v2.73h6.51c-.33 3.81-3.5 5.44-6.5 5.44C8.36 19.27 5 16.25 5 12c0-4.1 3.2-7.27 7.2-7.27c3.09 0 4.9 1.97 4.9 1.97L19 4.72S16.56 2 12.1 2C6.42 2 2.03 6.8 2.03 12c0 5.05 4.13 10 10.22 10c5.35 0 9.25-3.67 9.25-9.09c0-1.15-.15-1.81-.15-1.81Z"
+                />
+              </svg>
+              <span>Google Sign In</span>
             </button>
           )}
 

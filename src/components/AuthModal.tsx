@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { X, ShieldCheck } from 'lucide-react';
 import { AuthUser, UserPreferences } from '../types';
-import { signInWithGoogleLive } from '../lib/firebase';
+import {
+  fetchOrdersFromFirestore,
+  signInWithGoogleLive,
+  StoredOrderSummary,
+} from '../lib/firebase';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -25,6 +29,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [priorityGoal, setPriorityGoal] = useState<UserPreferences['priorityGoal']>(
     preferences.priorityGoal
   );
+  const [orders, setOrders] = useState<StoredOrderSummary[]>([]);
+  const [loadingOrders, setLoadingOrders] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -33,6 +39,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setLifeStage(preferences.lifeStage);
     setPriorityGoal(preferences.priorityGoal);
   }, [preferences, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !user) {
+      setOrders([]);
+      return;
+    }
+    let cancelled = false;
+    setLoadingOrders(true);
+    fetchOrdersFromFirestore(user.uid)
+      .then((list) => {
+        if (!cancelled) setOrders(list);
+      })
+      .catch((err) => {
+        console.error('Failed to load saved orders:', err);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingOrders(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, user]);
 
   if (!isOpen) return null;
 
@@ -49,6 +77,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setErrorMsg('Sign-in popup was closed before completing Google authentication.');
       } else if (rawMsg.includes('popup-blocked')) {
         setErrorMsg('Popup was blocked by your browser. Please allow popups for this site and try again.');
+      } else if (rawMsg.includes('unauthorized-domain')) {
+        setErrorMsg(
+          `This domain (${window.location.hostname}) needs to be listed under Authorized Domains in Firebase Authentication.`
+        );
       } else {
         setErrorMsg(rawMsg);
       }
@@ -86,75 +118,112 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         </button>
 
         {user ? (
-          <form onSubmit={handleSavePrefsOnly} className="space-y-5">
-            <div>
-              <p className="text-xs font-medium text-[#525B56] mb-1">
-                Verified Google Account
-              </p>
-              <h2 id="auth-modal-title" className="font-display text-2xl font-semibold text-[#1E2421]">
-                Cat Nutrition Profile
-              </h2>
-              <p className="text-xs text-[#525B56] mt-1">
-                Signed in as <span className="font-medium text-[#1E2421]">{user.displayName}</span>.
-                Your bag, order history, and cat preferences are synced with your account.
-              </p>
+          <div className="space-y-6">
+            <form onSubmit={handleSavePrefsOnly} className="space-y-4">
+              <div>
+                <p className="text-xs font-medium text-[#525B56] mb-1">
+                  Verified Google Account
+                </p>
+                <h2 id="auth-modal-title" className="font-display text-2xl font-semibold text-[#1E2421]">
+                  Cat Nutrition Profile
+                </h2>
+                <p className="text-xs text-[#525B56] mt-1">
+                  Signed in as <span className="font-medium text-[#1E2421]">{user.displayName}</span>.
+                  Your bag, order history, and cat preferences sync with Firebase.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium text-[#1E2421] mb-1">
+                    Your Cat&apos;s Name
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={60}
+                    value={catName}
+                    onChange={(e) => setCatName(e.target.value)}
+                    className="w-full rounded-lg border border-[#E4DDD2] bg-[#FBF9F5] px-3.5 py-2.5 text-sm text-[#1E2421] focus:outline-none focus:ring-2 focus:ring-[#234F3E]"
+                    placeholder="e.g. Miso"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-[#1E2421] mb-1">
+                    Life Stage
+                  </label>
+                  <select
+                    value={lifeStage}
+                    onChange={(e) => setLifeStage(e.target.value as UserPreferences['lifeStage'])}
+                    className="w-full rounded-lg border border-[#E4DDD2] bg-[#FBF9F5] px-3.5 py-2.5 text-sm text-[#1E2421] focus:outline-none focus:ring-2 focus:ring-[#234F3E]"
+                  >
+                    <option value="Kitten (3–12m)">Kitten (3–12m)</option>
+                    <option value="Indoor Adult">Indoor Adult</option>
+                    <option value="Senior (7+ yrs)">Senior (7+ yrs)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-[#1E2421] mb-1">
+                    Primary Nutrition Focus
+                  </label>
+                  <select
+                    value={priorityGoal}
+                    onChange={(e) =>
+                      setPriorityGoal(e.target.value as UserPreferences['priorityGoal'])
+                    }
+                    className="w-full rounded-lg border border-[#E4DDD2] bg-[#FBF9F5] px-3.5 py-2.5 text-sm text-[#1E2421] focus:outline-none focus:ring-2 focus:ring-[#234F3E]"
+                  >
+                    <option value="Natural Ingredients">Natural Ingredients</option>
+                    <option value="Gentle Digestion">Gentle Digestion</option>
+                    <option value="Fair Daily Value">Fair Daily Value</option>
+                  </select>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3 px-4 rounded-lg bg-[#234F3E] text-[#FBF9F5] text-sm font-semibold hover:bg-[#193B2E] transition-colors"
+              >
+                Save Cat Profile
+              </button>
+            </form>
+
+            {/* Saved Firestore Orders */}
+            <div className="pt-4 border-t border-[#E4DDD2]">
+              <h3 className="text-xs font-semibold text-[#1E2421] mb-2">
+                Recent Orders
+              </h3>
+              {loadingOrders ? (
+                <p className="text-xs text-[#525B56]">Loading your saved orders...</p>
+              ) : orders.length === 0 ? (
+                <p className="text-xs text-[#525B56]">
+                  No orders placed yet under this account.
+                </p>
+              ) : (
+                <ul className="space-y-2">
+                  {orders.map((order) => (
+                    <li
+                      key={order.orderId}
+                      className="rounded-lg bg-[#F4EFE6] border border-[#E4DDD2] p-3 text-xs flex items-center justify-between gap-2"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-mono-sku font-medium text-[#1E2421]">
+                          {order.orderId}
+                        </p>
+                        <p className="text-[#525B56] truncate">
+                          {order.itemsSummary} · {order.city}
+                        </p>
+                      </div>
+                      <span className="font-bold tabular-nums text-[#1E2421] shrink-0">
+                        ₹{order.totalInr}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
-
-            <div className="space-y-3.5">
-              <div>
-                <label className="block text-xs font-medium text-[#1E2421] mb-1">
-                  Your Cat&apos;s Name
-                </label>
-                <input
-                  type="text"
-                  maxLength={60}
-                  value={catName}
-                  onChange={(e) => setCatName(e.target.value)}
-                  className="w-full rounded-lg border border-[#E4DDD2] bg-[#FBF9F5] px-3.5 py-2.5 text-sm text-[#1E2421] focus:outline-none focus:ring-2 focus:ring-[#234F3E]"
-                  placeholder="e.g. Miso"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-[#1E2421] mb-1">
-                  Life Stage
-                </label>
-                <select
-                  value={lifeStage}
-                  onChange={(e) => setLifeStage(e.target.value as UserPreferences['lifeStage'])}
-                  className="w-full rounded-lg border border-[#E4DDD2] bg-[#FBF9F5] px-3.5 py-2.5 text-sm text-[#1E2421] focus:outline-none focus:ring-2 focus:ring-[#234F3E]"
-                >
-                  <option value="Kitten (3–12m)">Kitten (3–12m)</option>
-                  <option value="Indoor Adult">Indoor Adult</option>
-                  <option value="Senior (7+ yrs)">Senior (7+ yrs)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-[#1E2421] mb-1">
-                  Primary Nutrition Focus
-                </label>
-                <select
-                  value={priorityGoal}
-                  onChange={(e) =>
-                    setPriorityGoal(e.target.value as UserPreferences['priorityGoal'])
-                  }
-                  className="w-full rounded-lg border border-[#E4DDD2] bg-[#FBF9F5] px-3.5 py-2.5 text-sm text-[#1E2421] focus:outline-none focus:ring-2 focus:ring-[#234F3E]"
-                >
-                  <option value="Natural Ingredients">Natural Ingredients</option>
-                  <option value="Gentle Digestion">Gentle Digestion</option>
-                  <option value="Fair Daily Value">Fair Daily Value</option>
-                </select>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              className="w-full py-3 px-4 rounded-lg bg-[#234F3E] text-[#FBF9F5] text-sm font-semibold hover:bg-[#193B2E] transition-colors"
-            >
-              Save Cat Profile
-            </button>
-          </form>
+          </div>
         ) : (
           <div className="space-y-5">
             <div>

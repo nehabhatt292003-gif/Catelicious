@@ -78,6 +78,7 @@ function StorefrontContent() {
 
   // Auth & persisted preferences
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [isAuthReady, setIsAuthReady] = useState(false);
   const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
   const [cartItems, setCartItems] = useState<CartItem[]>(() => loadSavedCart('guest'));
   const isHydratingRef = useRef(false);
@@ -95,6 +96,7 @@ function StorefrontContent() {
   useEffect(() => {
     const unsubscribe = subscribeAuthState(async (authedUser) => {
       setUser(authedUser);
+      setIsAuthReady(true);
       if (authedUser) {
         isHydratingRef.current = true;
         try {
@@ -250,6 +252,7 @@ function StorefrontContent() {
       <Header
         cartCount={totalBagCount}
         user={user}
+        isAuthReady={isAuthReady}
         preferences={preferences}
         onOpenCart={() => setIsCartOpen(true)}
         onOpenAuth={() => setIsAuthOpen(true)}
@@ -405,6 +408,7 @@ function StorefrontContent() {
         onRemoveItem={removeFromCart}
         onAddTrialPack={() => addToCart(trialProduct, false)}
         onClearCart={clearCart}
+        onOpenAuth={() => setIsAuthOpen(true)}
         onOrderConfirmed={handleOrderConfirmed}
       />
     </div>

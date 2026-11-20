@@ -14,6 +14,7 @@ interface CartDrawerProps {
   onRemoveItem: (productId: string) => void;
   onAddTrialPack: () => void;
   onClearCart: () => void;
+  onOpenAuth?: () => void;
   onOrderConfirmed?: (order: MockOrder) => Promise<void> | void;
 }
 
@@ -29,6 +30,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   onRemoveItem,
   onAddTrialPack,
   onClearCart,
+  onOpenAuth,
   onOrderConfirmed,
 }) => {
   const [step, setStep] = useState<'cart' | 'checkout' | 'confirmed'>('cart');
@@ -346,6 +348,21 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
           ) : (
             /* Step 2: Simulated Urban Checkout Form */
             <form id="mock-checkout-form" onSubmit={handleCheckoutSubmit} className="space-y-4">
+              {!user && onOpenAuth && (
+                <div className="rounded-xl bg-[#E6F0EA] border border-[#234F3E]/20 p-3.5 flex items-center justify-between gap-3">
+                  <p className="text-xs text-[#1E2421]">
+                    Sign in with Google to save this order to your profile.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={onOpenAuth}
+                    className="px-3 py-1.5 rounded-lg bg-[#234F3E] text-[#FBF9F5] text-xs font-semibold whitespace-nowrap shrink-0 hover:bg-[#193B2E] transition-colors"
+                  >
+                    Google Sign In
+                  </button>
+                </div>
+              )}
+
               {formError && (
                 <div className="rounded-lg bg-[#F9EAE4] border border-[#9E5A47]/30 p-3 text-xs text-[#1E2421]">
                   {formError}

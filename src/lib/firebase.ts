@@ -15,6 +15,7 @@ import {
   getDocFromServer,
   getDocs,
   setDoc,
+  updateDoc,
   deleteDoc,
   collection,
   query,
@@ -140,9 +141,7 @@ export function subscribeAuthState(callback: (user: AuthUser | null) => void): (
 
 export async function signInWithGoogleLive(): Promise<AuthUser> {
   const result = await signInWithPopup(auth, googleProvider);
-  const mapped = mapFirebaseUser(result.user);
-  await ensureUserAccountDoc(mapped, DEFAULT_PREFERENCES);
-  return mapped;
+  return mapFirebaseUser(result.user);
 }
 
 export async function signOutAccount(): Promise<void> {
@@ -164,21 +163,11 @@ export async function ensureUserAccountDoc(
         lifeStage: data.lifeStage || fallbackPrefs.lifeStage,
         priorityGoal: data.priorityGoal || fallbackPrefs.priorityGoal,
       };
-      // Keep displayName & email fresh
-      await setDoc(
-        ref,
-        {
-          uid: user.uid,
-          displayName: user.displayName.slice(0, 100) || 'Cat Parent',
-          email: user.email.slice(0, 160),
-          catName: loadedPrefs.catName.slice(0, 60) || 'Miso',
-          lifeStage: loadedPrefs.lifeStage,
-          priorityGoal: loadedPrefs.priorityGoal,
-          createdAt: data.createdAt,
-          updatedAt: serverTimestamp(),
-        },
-        { merge: true }
-      );
+      await updateDoc(ref, {
+        displayName: user.displayName.slice(0, 100) || 'Cat Parent',
+        email: user.email.slice(0, 160),
+        updatedAt: serverTimestamp(),
+      });
       return loadedPrefs;
     }
 
@@ -296,6 +285,34 @@ export async function saveOrderToFirestore(uid: string, order: MockOrder): Promi
     });
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, path);
+  }
+}
+
+export interface StoredOrderSummary {
+  orderId: string;
+  city: string;
+  paymentMethod: string;
+  totalInr: number;
+  itemsSummary: string;
+}
+
+export async function fetchOrdersFromFirestore(uid: string): Promise<StoredOrderSummary[]> {
+  const path = `users/${uid}/orders`;
+  try {
+    const q = query(collection(db, 'users', uid, 'orders'), where('userId', '==', uid));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((d) => {
+      const data = d.data();
+      return {
+        orderId: String(data.orderId || d.id),
+        city: String(data.city || ''),
+        paymentMethod: String(data.paymentMethod || 'UPI'),
+        totalInr: Number(data.totalInr || 0),
+        itemsSummary: String(data.itemsSummary || ''),
+      };
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, path);
   }
 }
 
